@@ -133,6 +133,33 @@ export class AuthService {
     };
   }
 
+  // Wylogowanie użytkownika
+  async logout(refreshToken: string) {
+    if (!refreshToken || typeof refreshToken !== 'string') {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const tokenHash = this.hashToken(refreshToken);
+
+    const result = await this.prisma.refreshToken.updateMany({
+      where: {
+        tokenHash,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    if (result.count === 0) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    return {
+      message: 'Successfully logged out',
+    };
+  }
+
   private generateRefreshToken(): string {
     return randomBytes(64).toString('hex');
   }
