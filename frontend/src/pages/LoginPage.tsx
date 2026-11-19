@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+import { Link, useNavigate, Navigate } from "react-router";
 import {
   ArrowRight,
   GraduationCap,
@@ -16,10 +16,15 @@ import {
 import { loginUser } from "../services/auth.service";
 import axios from "axios";
 import { useState } from "react";
+import { useAuthStore } from "../stores/auth.store";
+import { useCurrentUser } from "../features/auth/hooks/useCurrentUser";
 
 function LoginPage() {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const setUser = useAuthStore((state) => state.setUser);
+  const navigate = useNavigate();
+  const { isSuccess, isLoading } = useCurrentUser();
 
   const {
     register,
@@ -33,6 +38,8 @@ function LoginPage() {
     setErrorMessage("");
     try {
       const response = await loginUser(data);
+      setUser(response.user);
+      navigate("/profile");
       console.log("Zalogowano użytkownika:", response.user);
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -46,6 +53,20 @@ function LoginPage() {
       }
     }
   };
+
+  // Jeśli trwa ładowanie sesji, wyświetl komunikat
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0b0d17] text-white">
+        <p className="text-gray-400">Sprawdzanie sesji...</p>
+      </div>
+    );
+  }
+
+  // Jeśli użytkownik jest zalogowany, przekierowuj do strony profilu
+  if (isSuccess) {
+    return <Navigate to="/profile" replace />;
+  }
 
   return (
     <main className="min-h-screen bg-[#0b0d17] text-white lg:grid lg:grid-cols-2">
