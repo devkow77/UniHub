@@ -12,6 +12,33 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
+  // Generowanie tokenów i refresh tokenów
+  async issueTokens(user: { id: string; email: string; role: string }) {
+    const accessToken = await this.jwtService.signAsync({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const refreshToken = this.generateRefreshToken();
+    const tokenHash = this.hashToken(refreshToken);
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    await this.prisma.refreshToken.create({
+      data: {
+        tokenHash,
+        userId: user.id,
+        expiresAt,
+      },
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
   // Logowanie użytkownika i generowanie tokenów
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
